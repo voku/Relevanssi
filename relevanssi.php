@@ -2074,10 +2074,22 @@ function relevanssi_build_index($extend = false) {
 	
 	if (!$extend) {
 		// truncate table first
-		$wpdb->query("TRUNCATE TABLE $relevanssi_table");
-// BEGIN modified by renaissancehack
-//  modified query to get child records that inherit their post_status
-        $q = "SELECT *,parent.post_status as post_status
+    $wpdb->query( "TRUNCATE TABLE $relevanssi_table" );
+    update_option( 'relevanssi_index', '' );
+
+    $limit = 0;
+  } else {
+    $limit = get_option( 'relevanssi_index_limit', 200 );
+  }
+
+  $limit_sql = "";
+
+  if ( $limit > 0 ) {
+    $size  = $limit;
+    $limit_sql = " LIMIT $limit";
+  }
+
+    $q = "SELECT *,parent.post_status as post_status
 		FROM $wpdb->posts parent, $wpdb->posts post WHERE
         (parent.post_status IN ('publish', 'private', 'draft', 'pending', 'future'))
         AND (
@@ -2086,32 +2098,13 @@ function relevanssi_build_index($extend = false) {
             OR
             (parent.ID=post.ID)
         )
-		AND post.post_type!='nav_menu_item' AND post.post_type!='revision' $attachments $restriction $negative_restriction";
-// END modified by renaissancehack
-		update_option('relevanssi_index', '');
-	}
-	else {
-		// extending, so no truncate and skip the posts already in the index
-		$limit = get_option('relevanssi_index_limit', 200);
-		if ($limit > 0) {
-			$size = $limit;
-			$limit = " LIMIT $limit";
-		}
-// BEGIN modified by renaissancehack
-//  modified query to get child records that inherit their post_status
-        $q = "SELECT *,parent.post_status as post_status
-		FROM $wpdb->posts parent, $wpdb->posts post WHERE
-        (parent.post_status IN ('publish', 'private', 'draft', 'pending', 'future'))
-        AND (
-            (post.post_status='inherit'
-            AND post.post_parent=parent.ID)
-            OR
-            (parent.ID=post.ID)
-        )
-        AND post.post_type!='nav_menu_item' AND post.post_type!='revision' $attachments
-		AND post.ID NOT IN (SELECT DISTINCT(doc) FROM $relevanssi_table) $restriction $limit";
-// END modified by renaissancehack
-	}
+		AND post.post_type!='nav_menu_item'
+		AND post.post_type!='revision'
+		$attachments
+		$restriction
+		$negative_restriction
+		AND post.ID NOT IN (SELECT DISTINCT(doc) FROM $relevanssi_table)
+		$limit_sql";
 
 	$custom_fields = relevanssi_get_custom_fields();
 
