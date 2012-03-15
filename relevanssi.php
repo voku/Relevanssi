@@ -2118,6 +2118,8 @@ function relevanssi_build_index($extend = false) {
 		. __((($size == 0) || (count($content) < $size)) ? "Indexing complete!" : "More to index...", "relevanssi")
 		. '</p></div>';
 	update_option('relevanssi_indexed', 'done');
+
+	return ($size == 0) || (count($content) < $size) ;
 }
 
   function relevanssi_clear_index() {
