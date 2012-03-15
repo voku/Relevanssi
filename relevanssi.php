@@ -3701,4 +3701,53 @@ comparison</a> and <a href="http://www.relevanssi.com/buy-premium/?utm_source=pl
 </div>
 EOH;
 }
-?>
+
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+  /**
+   * Implement example command
+   *
+   * @package    wp-cli
+   * @subpackage commands/community
+   * @maintainer Andreas Creten (http://twitter.com/andreascreten)
+   */
+  class RelevanssiCommand extends WP_CLI_Command {
+    function index( $args = array(), $assoc_args = array() ) {
+      $old_relevanssi_index_limit = get_option( 'relevanssi_index_limit', '' );
+
+      if(array_key_exists('limit', $assoc_args)) {
+        $relevanssi_index_limit = $assoc_args['limit'];
+      } else {
+        $relevanssi_index_limit = 100;
+      }
+
+      update_option('relevanssi_index_limit', $relevanssi_index_limit);
+
+      $num_indexed = 0;
+      while(!relevanssi_build_index(true)) {
+        WP_CLI::line("Indexing " . $num_indexed + 1 . "..." . $num_indexed + $relevanssi_index_limit);
+        $num_indexed += $relevanssi_index_limit;
+      }
+
+      WP_CLI::line('Indexing complete!');
+
+      update_option( 'relevanssi_index_limit', $old_relevanssi_index_limit );
+    }
+
+    function reindex( $args = array(), $assoc_args = array() ) {
+      $this->clear();
+      $this->index($args, $assoc_args);
+    }
+
+    function clear( $args = array() ) {
+      relevanssi_clear_index();
+    }
+
+    static function help() {
+      WP_CLI::line( 'usage: wp relevanssi index --limit 100' );
+    }
+  }
+
+  // Register the class as the 'relevanssi' command handler
+  WP_CLI::addCommand( 'relevanssi', 'RelevanssiCommand' );
+}
