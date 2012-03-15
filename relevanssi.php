@@ -2313,6 +2313,10 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 		$auth = $post->post_author;
 		$display_name = $wpdb->get_var("SELECT display_name FROM $wpdb->users WHERE ID=$auth");
 		$names = relevanssi_tokenize($display_name, false);
+
+		$names = apply_filters('relevanssi_index_author', $names, $post);
+		$names = apply_filters('relevanssi_index_author-', $names, $post);
+
 		foreach($names as $name => $count) {
 			$wpdb->query("INSERT INTO $relevanssi_table (doc, term, tf, title)
 				VALUES ($post->ID, '$name', $count, 5)");
