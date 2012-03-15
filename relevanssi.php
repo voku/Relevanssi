@@ -3712,7 +3712,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
    * @maintainer Andreas Creten (http://twitter.com/andreascreten)
    */
   class RelevanssiCommand extends WP_CLI_Command {
-    function index( $args = array(), $assoc_args = array() ) {
+    public function index( $args = array(), $assoc_args = array() ) {
       $old_relevanssi_index_limit = get_option( 'relevanssi_index_limit', '' );
 
       if(array_key_exists('limit', $assoc_args)) {
@@ -3734,16 +3734,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
       update_option( 'relevanssi_index_limit', $old_relevanssi_index_limit );
     }
 
-    function reindex( $args = array(), $assoc_args = array() ) {
+    public function reindex( $args = array(), $assoc_args = array() ) {
       $this->clear();
       $this->index($args, $assoc_args);
     }
 
-    function clear( $args = array() ) {
+    public function clear( $args = array() ) {
       relevanssi_clear_index();
     }
 
-    static function help() {
+    public function help() {
       WP_CLI::line( 'usage: wp relevanssi index --limit 100' );
     }
   }
