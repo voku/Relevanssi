@@ -2340,6 +2340,9 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 	
 	$contents = $post->post_content;
 	
+	$contents = apply_filters('relevanssi_index_content', $contents, $post);
+	$contents = apply_filters('relevanssi_index_content-' . $post->post_type, $contents, $post);
+
 	if ('on' == get_option('relevanssi_expand_shortcodes')) {
 		if (function_exists("do_shortcode")) {
 			$contents = do_shortcode($contents);
