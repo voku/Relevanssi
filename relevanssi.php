@@ -2073,9 +2073,8 @@ function relevanssi_build_index($extend = false) {
 	$size = 0;
 	
 	if (!$extend) {
-		// truncate table first
-    $wpdb->query( "TRUNCATE TABLE $relevanssi_table" );
-    update_option( 'relevanssi_index', '' );
+    // truncate table first
+    relevanssi_clear_index();
 
     $limit = 0;
   } else {
@@ -2120,6 +2119,12 @@ function relevanssi_build_index($extend = false) {
 		. '</p></div>';
 	update_option('relevanssi_indexed', 'done');
 }
+
+  function relevanssi_clear_index() {
+    global $wpdb, $relevanssi_table;
+    $wpdb->query( "TRUNCATE TABLE $relevanssi_table" );
+    update_option( 'relevanssi_index', '' );
+  }
 
 function relevanssi_remove_doc($id) {
 	global $wpdb, $relevanssi_table;
