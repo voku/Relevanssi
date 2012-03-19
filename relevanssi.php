@@ -2894,8 +2894,11 @@ function relevanssi_common_words() {
 	
 	echo "<h3>" . __("25 most common words in the index", 'relevanssi') . "</h3>";
 	
+	echo "<p>" . __("Not shown here due to the huge amount of indexed words... use the command line tool instead.", 'relevanssi') . "</p>";
+  return;
+
 	echo "<p>" . __("These words are excellent stopword material. A word that appears in most of the posts in the database is quite pointless when searching. This is also an easy way to create a completely new stopword list, if one isn't available in your language. Click the icon after the word to add the word to the stopword list. The word will also be removed from the index, so rebuilding the index is not necessary.", 'relevanssi') . "</p>";
-	
+
 	$words = $wpdb->get_results("SELECT COUNT(DISTINCT(doc)) as cnt, term
 		FROM $relevanssi_table GROUP BY term ORDER BY cnt DESC LIMIT 25");
 
