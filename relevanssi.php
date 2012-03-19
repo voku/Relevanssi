@@ -3705,52 +3705,100 @@ comparison</a> and <a href="http://www.relevanssi.com/buy-premium/?utm_source=pl
 EOH;
 }
 
+  if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    /**
+     * CLI commands for relevanssi indexing
+     *
+     * @package    wp-cli
+     * @subpackage commands/community
+     * @maintainer Andreas Creten (http://twitter.com/andreascreten)
+     */
+    class RelevanssiCommand extends WP_CLI_Command {
+      public function index( $args = array(), $assoc_args = array() ) {
+        $old_relevanssi_index_limit = get_option( 'relevanssi_index_limit', '' );
 
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-  /**
-   * Implement example command
-   *
-   * @package    wp-cli
-   * @subpackage commands/community
-   * @maintainer Andreas Creten (http://twitter.com/andreascreten)
-   */
-  class RelevanssiCommand extends WP_CLI_Command {
-    public function index( $args = array(), $assoc_args = array() ) {
-      $old_relevanssi_index_limit = get_option( 'relevanssi_index_limit', '' );
+        if ( array_key_exists( 'limit', $assoc_args ) ) {
+          $relevanssi_index_limit = $assoc_args[ 'limit' ];
+        } else {
+          $relevanssi_index_limit = 100;
+        }
 
-      if(array_key_exists('limit', $assoc_args)) {
-        $relevanssi_index_limit = $assoc_args['limit'];
-      } else {
-        $relevanssi_index_limit = 100;
+        update_option( 'relevanssi_index_limit', $relevanssi_index_limit );
+
+        $num_indexed = 0;
+        WP_CLI::line(
+          '[' . date(
+            'Y-m-d H:i:s'
+          ) . "] Indexing " . ( $num_indexed + 1 ) . "..." . ( $num_indexed + $relevanssi_index_limit )
+        );
+
+        while ( !relevanssi_build_index( true ) ) {
+          $num_indexed = ( $num_indexed + $relevanssi_index_limit );
+          WP_CLI::line(
+            '[' . date(
+              'Y-m-d H:i:s'
+            ) . "] Indexing " . ( $num_indexed + 1 ) . "..." . ( $num_indexed + $relevanssi_index_limit )
+          );
+        }
+
+        WP_CLI::success( 'Indexing complete!' );
+
+        update_option( 'relevanssi_index_limit', $old_relevanssi_index_limit );
       }
 
-      update_option('relevanssi_index_limit', $relevanssi_index_limit);
-
-      $num_indexed = 0;
-      while(!relevanssi_build_index(true)) {
-        WP_CLI::line("Indexing " . $num_indexed + 1 . "..." . $num_indexed + $relevanssi_index_limit);
-        $num_indexed += $relevanssi_index_limit;
+      public function reindex( $args = array(), $assoc_args = array() ) {
+        $this->clear();
+        $this->index( $args, $assoc_args );
       }
 
-      WP_CLI::line('Indexing complete!');
+      public function clear( $args = array() ) {
+        relevanssi_clear_index();
+      }
 
-      update_option( 'relevanssi_index_limit', $old_relevanssi_index_limit );
+      public function add_stopword( $args = array() ) {
+        if ( !isset( $args[ 0 ] ) ) {
+          return $this->help();
+        }
+
+        $term = $args[ 0 ];
+
+        if ( relevanssi_add_single_stopword( $term ) ) {
+          WP_CLI::success( 'Added term ' . $term . ' to the list of stopwords and removed it from the index.' );
+        } else {
+          WP_CLI::error( 'Could not add the term ' . $term . ' to the list of stopwords.' );
+        }
+      }
+
+      public function stopword_candidates( $args = array(), $assoc_args = array() ) {
+        if ( array_key_exists( 'limit', $assoc_args ) ) {
+          $word_limit = $assoc_args[ 'limit' ];
+        } else {
+          $word_limit = 25;
+        }
+
+        global $relevanssi_table;
+        global $wpdb;
+        $words = $wpdb->get_results(
+          "SELECT COUNT(DISTINCT(doc)) as cnt, term
+		       FROM $relevanssi_table GROUP BY term ORDER BY cnt DESC LIMIT $word_limit"
+        );
+
+        foreach($words as $word) {
+          WP_CLI::line( "{$word->term} ({$word->cnt})");
+        }
+      }
+
+      public function help() {
+        WP_CLI::line( <<<EOB
+wp relevanssi index --limit=100                 Index the unindexed posts, 100 at a time.
+wp relevanssi reindex --limit=100               Index all posts, discarding any old index, 100 at a time.
+wp relevanssi add_stopword <term>               Add a new term to the list of stopwords and remove it from the index.
+wp relevanssi stopword_candidates --limit=200   Show a list of the <limit> most common words in the index.
+EOB
+        );
+      }
     }
 
-    public function reindex( $args = array(), $assoc_args = array() ) {
-      $this->clear();
-      $this->index($args, $assoc_args);
-    }
-
-    public function clear( $args = array() ) {
-      relevanssi_clear_index();
-    }
-
-    public function help() {
-      WP_CLI::line( 'usage: wp relevanssi index --limit 100' );
-    }
+    // Register the class as the 'relevanssi' command handler
+    WP_CLI::addCommand( 'relevanssi', 'RelevanssiCommand' );
   }
-
-  // Register the class as the 'relevanssi' command handler
-  WP_CLI::addCommand( 'relevanssi', 'RelevanssiCommand' );
-}
